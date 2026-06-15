@@ -1,0 +1,170 @@
+================================================
+INCIDENT INVESTIGATION REPORT
+================================================
+Date: 06/15/2026
+Investigator: Erik Do
+System: Ubuntu 26.04 VM
+Hostname: Ubuntu
+IP Address: 10.0.2.15
+
+------------------------------------------------
+EXECUTIVE SUMMARY
+------------------------------------------------
+A security investigation was conducted on the Ubuntu
+lab system to identify the source and scope of
+repeated failed authentication attempts and
+privileged account activity. This report documents
+findings from log analysis, user account review,
+file system inspection, and network activity review.
+
+------------------------------------------------
+INVESTIGATION TIMELINE
+------------------------------------------------
+[03:40] - Investigation initiated
+[04:02] - System overview completed
+[04:29] - Raw auth.log reviewed with tail
+[04:29] - Authentication events isolated with grep
+[05:13] - File system inspected
+[05:43] - Network activity reviewed
+[06:11] - Report completed
+
+------------------------------------------------
+FINDINGS
+------------------------------------------------
+
+FINDING 1: Failed Authentication Attempts
+- Number of failed attempts observed: 
+	6
+- Usernames attempted: 
+root
+fakeuser
+- Timestamps observed: 
+	03:34:11
+	03:34:21
+	03:34:32
+	03:34:38
+	03:38:51
+	03:40:08
+	03:40:24
+	03:40:31
+- Pattern observed: 
+Clustered
+- Source of attempts: 
+localhost (127.0.0.1)
+- Method of detection: 
+tail followed by grep analysis of auth.log
+- Assessment: 
+Expected. The activity matched three failed root authentication attempts and three failed SSH login attempts intentionally generated.
+
+FINDING 2: Invalid User Events
+- Invalid usernames attempted via SSH:
+	fakeuser
+- Timestamps observed:
+	03:34:07
+	03:39:17
+	03:40:49
+- Source of attempts:
+	localhost (127.0.0.1)
+- Method of detection:
+grep "Invalid user" on auth.log
+- Assessment: 
+	Expected. The invalid user events corresponded to the three failed SSH login attempts.
+
+FINDING 3: Privileged Account Activity
+- Commands run with sudo:
+	ls /root
+	cat /etc/passwd
+	whoami 
+	touch /tmp/suspicious_file.txt
+	chmod 777 /tmp/suspicious_file.txt
+	tee /tmp/suspicious_file.txt
+- User who ran them:
+	user
+- Timestamps:
+	03:41:19
+	03:41:28
+	03:41:34
+	03:41:51
+	03:42:12
+	03:42:32
+- Method of detection: 
+grep "COMMAND" on auth.log
+- Assessment: 
+Expected. Privileged activity originated from an authorized local user and matched the actions performed. 
+
+FINDING 4: Suspicious Files
+- File found:
+ /tmp/suspicious_file.txt
+- Permissions: 
+777 (world writable)
+- Owner: 
+root
+- Group: 
+root
+- Contents: 
+"test data"
+- Method of detection:
+ls -l then find /tmp -perm -o+w
+- Assessment: 
+World writable file owned by root in /tmp represents a potential security risk. Any user on the system can read or modify the file contents.
+
+FINDING 5: Network Activity
+- Open ports observed:
+	22 (SSH)
+	53 (DNS Resolver)
+	323 (Chrony NTP)
+	631 (CUPS Printing Service)
+- Active connections:
+	No established TCP connections were observed.
+- SSH activity:
+SSH logs showed invalid user events, failed password attempts, authentication failures, and connection closures involving the username “fakeuser” originating from localhost (127.0.0.1).
+- Method of detection: 
+ss, journalctl
+- Assessment:
+Expected. Observed network activity was consistent with simulated authentication testing. 
+
+------------------------------------------------
+ROOT CAUSE ANALYSIS
+------------------------------------------------
+Three failed authentication attempts were directed at the root account using the su command. Three additional failed SSH login attempts targeted the invalid username “fakeuser”. Log evidence showed that all activity originated from localhost (127.0.0.1). This indicates that the actions were performed locally on the system. 
+Additional activity was observed through sudo command execution. There was a creation of a world-writable file located in /tmp. 
+No evidence of an active compromise, unauthorized access, malware execution, persistence mechanisms, or external attacker activity was identified. 
+------------------------------------------------
+RECOMMENDATIONS
+------------------------------------------------
+1. Monitor failed login attempts and consider
+   implementing fail2ban to automatically block
+   IPs with repeated failures
+2. Restrict permissions on files in /tmp.
+   World-writable files should be reviewed
+   and removed if unnecessary
+3. Review sudo access and ensure only authorized
+   users have sudo privileges
+4. Enable automatic log monitoring and set up
+   alerts for repeated authentication failures
+5. Regularly audit user accounts and active
+   sessions
+
+------------------------------------------------
+TOOLS USED
+------------------------------------------------
+- tail on /var/log/auth.log: Raw log review
+- grep on /var/log/auth.log: Authentication events
+- ls -l: File ownership and permission review
+- find: Suspicious file detection
+- ps -eo user,pid,cmd: Process review
+- ss: Network connection review
+- journalctl: SSH service log review
+- who / w: Active session review
+- getent: User and group verification
+
+------------------------------------------------
+CONCLUSION
+------------------------------------------------
+The investigation successfully identified and documented simulated authentication failures, invalid user events, privileged account activity, file system artifacts, and network activity.
+Evidence collected from auth.log, journalctl, process review, file system inspection, and network analysis was sufficient to reconstruct the sequence of events and determine their source. 
+Confidence Level: High
+The findings are strongly supported by system logs, file system evidence, and network observations that were collected during the investigation. 
+================================================
+END OF REPORT
+================================================
