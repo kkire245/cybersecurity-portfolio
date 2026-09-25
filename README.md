@@ -51,7 +51,7 @@ Conducted a simulated Linux security investigation involving failed authenticati
 ## Certifications
 
 * Google Cybersecurity Professional Certificate
-* CompTIA Security+ (In Progress)
+* CompTIA Security+ 
 
 ## Education
 
